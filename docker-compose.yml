@@ -1,0 +1,37 @@
+services:
+  # База данных PostgreSQL
+  db:
+    container_name: gateway-docker
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '4000:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  # Сервис API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - '8080:8080'
+    depends_on:
+      - db
+    volumes:
+      - gradle-cache:/home/gradle/caches
+
+volumes:
+  db:
+    driver: local
+  gradle-cache:
+    driver: local
+
