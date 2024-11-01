@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # База данных для API Gateway
+  db-gateway:
+    container_name: gateway-docker
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '4000:5432'
+    volumes:
+      - db-gateway:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # База данных для Radar Data
+  db-radar:
+    container_name: radar-docker
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '4001:5432'
+    volumes:
+      - db-radar:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # База данных для Vote Data
+  db-vote:
+    container_name: vote-docker
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '4002:5432'
+    volumes:
+      - db-vote:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Сервис API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-gateway:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - '8080:8080'
+    depends_on:
+      db-gateway:
+        condition: service_healthy
+
+  # Сервис Radar Data
+  radar-data:
+    build:
+      context: ./radar-data
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-radar:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - '8081:8081'
+    depends_on:
+      db-radar:
+        condition: service_healthy
+
+  # Сервис Vote Data
+  vote-data:
+    build:
+      context: ./vote-data
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-vote:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - '8082:8082'
+    depends_on:
+      db-vote:
+        condition: service_healthy
+
+volumes:
+  db-gateway:
+    driver: local
+  db-radar:
+    driver: local
+  db-vote:
+    driver: local
+  gradle-cache:
+    driver: local
+
