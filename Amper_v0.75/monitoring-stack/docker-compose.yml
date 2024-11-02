@@ -1,0 +1,101 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.listen-address=:9095'
+    ports:
+      - "9095:9095"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring_network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - monitoring_network
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring_network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    command:
+      - "--port=8085"
+    ports:
+      - "8085:8085"
+    volumes:
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring_network
+
+  postgres-exporter-api-db:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter-api-db
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@api-db:5432/postgres?sslmode=disable"
+    networks:
+      - monitoring_network
+
+  postgres-exporter-radar-db:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter-radar-db
+    restart: unless-stopped
+    ports:
+      - "9188:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@radar-db:5432/postgres?sslmode=disable"
+    networks:
+      - monitoring_network
+
+  postgres-exporter-vote-db:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter-vote-db
+    restart: unless-stopped
+    ports:
+      - "9189:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@vote-db:5432/postgres?sslmode=disable"
+    networks:
+      - monitoring_network
+
+networks:
+  monitoring_network:
+    external: true
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+

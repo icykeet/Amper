@@ -1,0 +1,86 @@
+version: "3.8"
+services:
+  api-db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - api-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - monitoring_network
+
+  vote-db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - vote-db-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - monitoring_network
+
+  radar-db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - radar-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - monitoring_network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    depends_on:
+      - api-db
+      - radar-data
+      - vote-data
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - monitoring_network
+
+  vote-data:
+    build:
+      context: ./vote-data/vote-data-app
+      dockerfile: Dockerfile
+    depends_on:
+      - vote-db
+    ports:
+      - "8002:8002"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - monitoring_network
+
+  radar-data:
+    build:
+      context: ./radar-data/radar-data-app
+      dockerfile: Dockerfile
+    depends_on:
+      - radar-db
+    ports:
+      - "8001:8001"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - monitoring_network
+
+volumes:
+  api-db-data:
+  vote-db-data:
+  radar-db-data:
+networks:
+  monitoring_network:
+    driver: bridge
